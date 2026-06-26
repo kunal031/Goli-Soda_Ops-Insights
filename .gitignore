@@ -7,8 +7,7 @@ node_modules/
 # ── Environment & Secrets ────────────────────────────────
 .env
 .env.*
-!.env.example
-!.env.*.example
+
 
 # ── Build Outputs ────────────────────────────────────────
 dist/
