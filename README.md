@@ -87,6 +87,7 @@ Built specifically for **Uday Food & Beverages**—a Goli Soda manufacturer and 
      ```
 
 4. **Frontend Setup**
+
    ```bash
    cd ../client
    npm install
@@ -100,5 +101,3 @@ Built specifically for **Uday Food & Beverages**—a Goli Soda manufacturer and 
      ```bash
      npm start
      ```
-
----
