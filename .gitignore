@@ -1,7 +1,74 @@
-node_modules
+# ── Dependencies ─────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ── Environment & Secrets ────────────────────────────────
 .env
-.env*.local
+.env.*
+!.env.example
+!.env.*.example
+
+# ── Build Outputs ────────────────────────────────────────
 dist/
-.vercel/
+build/
+out/
+.output/
+
+# ── Database ─────────────────────────────────────────────
 *.db
-backend/data/*.db
+*.sqlite
+*.sqlite3
+backend/data/
+*.db-journal
+*.db-shm
+*.db-wal
+
+# ── Logs ─────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── Vite / Frontend ──────────────────────────────────────
+frontend/.vite/
+frontend/dist/
+frontend/build/
+
+# ── Testing ──────────────────────────────────────────────
+coverage/
+*.lcov
+.nyc_output/
+
+# ── Deployment ───────────────────────────────────────────
+.vercel/
+
+# ── macOS ────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# ── Editors ──────────────────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── Misc ─────────────────────────────────────────────────
+*.tsbuildinfo
+.cache/
+.eslintcache
+.stylelintcache

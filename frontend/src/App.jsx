@@ -35,8 +35,17 @@ import {
   FileSpreadsheet,
   FileText,
   Download,
-  Search
+  Search,
+  Menu,
+  Lightbulb
 } from 'lucide-react';
+
+// Analytics / Insights components
+import InsightsMetricCards    from './InsightsMetricCards';
+import InsightsRevenueTrends  from './InsightsRevenueTrends';
+import InsightsStockMovement  from './InsightsStockMovement';
+import InsightsTopSKUs        from './InsightsTopSKUs';
+import InsightsExpenseRevenue from './InsightsExpenseRevenue';
 
 // ==========================================
 // 1. AUTH CONTEXT
@@ -331,7 +340,7 @@ export function NotificationPanel() {
 
       {open && (
         <div
-          className="animate-scale-in"
+          className="animate-scale-in notif-panel"
           style={{
             position: 'absolute',
             top: 'calc(100% + 8px)',
@@ -711,6 +720,8 @@ const NAV_ITEMS = [
   { to: '/finance', label: 'Finance', icon: IndianRupee },
   { to: '/profit-loss', label: 'P&L Report', icon: TrendingUp },
   { to: '/profile', label: 'Profile', icon: User },
+  { to: '/insight', label: 'Analytics', icon: Lightbulb}
+
 ];
 
 const PAGE_TITLES = {
@@ -720,6 +731,7 @@ const PAGE_TITLES = {
   '/finance': 'Expense & Sales Tracking',
   '/profit-loss': 'Profit & Loss Report',
   '/profile': 'Profile & User Management',
+  '/insight': 'Business Analytics'
 };
 
 export function Layout() {
@@ -727,10 +739,35 @@ export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const pageTitle = PAGE_TITLES[location.pathname] || 'GoliOps';
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  // Prevent body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside className="sidebar">
+      {/* Mobile overlay backdrop */}
+      {sidebarOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-brand">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div
@@ -767,7 +804,7 @@ export function Layout() {
                   letterSpacing: '0.04em',
                 }}
               >
-                UDAY FOOD & BEVERAGES
+                UDAY FOOD &amp; BEVERAGES
               </p>
             </div>
           </div>
@@ -844,7 +881,16 @@ export function Layout() {
 
       <div className="main-content">
         <header className="top-header">
-          <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Hamburger — only visible on mobile via CSS */}
+            <button
+              id="mobile-menu-btn"
+              className="mobile-menu-btn"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open navigation menu"
+            >
+              <Menu size={20} />
+            </button>
             <h2
               style={{
                 fontSize: '1.125rem',
@@ -858,6 +904,7 @@ export function Layout() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <NotificationPanel />
             <div
+              className="top-header-date"
               style={{
                 fontSize: '0.8125rem',
                 color: '#94a3b8',
@@ -881,6 +928,7 @@ export function Layout() {
     </div>
   );
 }
+
 
 // ==========================================
 // 3. PAGES
@@ -1894,7 +1942,7 @@ export function Home() {
             <div key={i} className="skeleton" style={{ height: 120, borderRadius: 16 }} />
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+        <div className="grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
           <div className="skeleton" style={{ height: 280, borderRadius: 16 }} />
           <div className="skeleton" style={{ height: 280, borderRadius: 16 }} />
         </div>
@@ -1915,7 +1963,7 @@ export function Home() {
   return (
     <div className="animate-fade-in">
       <div
-        className="glass-card"
+        className="glass-card home-greeting"
         style={{
           padding: '24px 28px',
           marginBottom: 28,
@@ -1980,7 +2028,7 @@ export function Home() {
           gap: 20,
           marginBottom: 28,
         }}
-        className="stagger-children"
+        className="stagger-children kpi-grid"
       >
         <KPICard
           icon={Package}
@@ -2016,14 +2064,8 @@ export function Home() {
         />
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-          gap: 20,
-          marginBottom: 24,
-        }}
-      >
+      <div className="panel-grid">
+
         <div className="glass-card animate-fade-in" style={{ padding: 24, animationDelay: '0.2s' }}>
           <div
             style={{
@@ -2253,14 +2295,8 @@ export function Home() {
         )}
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-          gap: 20,
-          marginBottom: 24,
-        }}
-      >
+      <div className="panel-grid">
+
         <div className="glass-card animate-fade-in" style={{ overflow: 'hidden', animationDelay: '0.3s' }}>
           <div
             style={{
@@ -2444,14 +2480,8 @@ export function Home() {
         )}
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-          gap: 20,
-          marginBottom: 24,
-        }}
-      >
+      <div className="panel-grid">
+
         <div
           className="glass-card animate-fade-in"
           style={{ overflow: 'hidden', animationDelay: '0.4s' }}
@@ -2808,7 +2838,7 @@ export function Dashboard() {
           gap: 20,
           marginBottom: 28,
         }}
-        className="stagger-children"
+        className="stagger-children kpi-grid"
       >
         <KPICard
           icon={Package}
@@ -3245,7 +3275,7 @@ export function Inventory() {
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div className="grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div>
               <label className="form-label" htmlFor="txn-type">Type</label>
               <select
@@ -3329,7 +3359,7 @@ export function Inventory() {
         )}
 
         <form onSubmit={handleAddProduct}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+          <div className="grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
             <div>
               <label className="form-label" htmlFor="prod-id">SKU ID</label>
               <input
@@ -3354,7 +3384,7 @@ export function Inventory() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+          <div className="grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
             <div>
               <label className="form-label" htmlFor="prod-variant">Variant</label>
               <input
@@ -4133,7 +4163,7 @@ export function ProfitLoss() {
   if (loading) {
     return (
       <div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+        <div className="grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
           <div className="skeleton" style={{ height: 200, borderRadius: 16 }} />
           <div className="skeleton" style={{ height: 200, borderRadius: 16 }} />
         </div>
@@ -4403,6 +4433,162 @@ export function ProfitLoss() {
 }
 
 // ==========================================
+// 3b. ANALYTICS PAGE
+// ==========================================
+
+const ANALYTICS_TABS = [
+  { id: 'overview',  label: 'Overview',         icon: BarChart3 },
+  { id: 'revenue',   label: 'Revenue Trends',   icon: TrendingUp },
+  { id: 'stock',     label: 'Stock Movement',   icon: Boxes },
+  { id: 'skus',      label: 'Top SKUs',         icon: Sparkles },
+  { id: 'expenses',  label: 'Expense vs Revenue', icon: Wallet },
+];
+
+export function Analytics() {
+  const { apiFetch } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [dashboard, setDashboard]     = useState(null);
+  const [pnl, setPnl]                 = useState(null);
+  const [sales, setSales]             = useState([]);
+  const [expenses, setExpenses]       = useState([]);
+  const [products, setProducts]       = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchAll = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const [dRes, pRes, sRes, eRes, prRes, trRes] = await Promise.all([
+          apiFetch('/api/reports/dashboard'),
+          apiFetch('/api/reports/pnl'),
+          apiFetch('/api/sales'),
+          apiFetch('/api/expenses'),
+          apiFetch('/api/inventory/products'),
+          apiFetch('/api/inventory/transactions'),
+        ]);
+        const [d, p, s, e, pr, tr] = await Promise.all([
+          dRes.json(),
+          pRes.json(),
+          sRes.json(),
+          eRes.json(),
+          prRes.json(),
+          trRes.json(),
+        ]);
+        if (!cancelled) {
+          setDashboard(d);
+          setPnl(p);
+          setSales(Array.isArray(s) ? s : []);
+          setExpenses(Array.isArray(e) ? e : []);
+          setProducts(Array.isArray(pr) ? pr : []);
+          setTransactions(Array.isArray(tr) ? tr : []);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message || 'Failed to load analytics data.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchAll();
+    return () => { cancelled = true; };
+  }, [apiFetch]);
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="ins-loading-state">
+          <div className="ins-spinner" />
+          <p>Loading analytics data…</p>
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div className="ins-error-state">
+          <AlertTriangle size={32} color="var(--danger)" />
+          <p style={{ color: 'var(--danger)' }}>{error}</p>
+          <button className="btn btn-primary" onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      );
+    }
+
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <div className="ins-view-stack">
+            <InsightsMetricCards dashboard={dashboard} pnl={pnl} products={products} />
+            <div className="ins-grid-2">
+              <InsightsRevenueTrends pnl={pnl} compact />
+              <InsightsTopSKUs pnl={pnl} sales={sales} compact />
+            </div>
+          </div>
+        );
+      case 'revenue':
+        return <InsightsRevenueTrends pnl={pnl} sales={sales} />;
+      case 'stock':
+        return <InsightsStockMovement products={products} transactions={transactions} />;
+      case 'skus':
+        return <InsightsTopSKUs pnl={pnl} sales={sales} />;
+      case 'expenses':
+        return <InsightsExpenseRevenue pnl={pnl} expenses={expenses} />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="analytics-page">
+      {/* Live data badge + period */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Lightbulb size={18} color="var(--brand-400)" />
+          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--surface-300)' }}>
+            Business Analytics
+          </span>
+          {pnl?.period && (
+            <span style={{
+              fontSize: '0.6875rem', fontWeight: 600, color: 'var(--brand-400)',
+              background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.2)',
+              padding: '2px 10px', borderRadius: 20,
+            }}>
+              {pnl.period}
+            </span>
+          )}
+        </div>
+        <div style={{
+          fontSize: '0.6875rem', fontWeight: 600, color: 'var(--success)',
+          background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)',
+          padding: '3px 10px', borderRadius: 20,
+        }}>
+          Live Data
+        </div>
+      </div>
+
+      {/* Internal tab navigation */}
+      <nav className="ins-tab-nav" aria-label="Analytics tabs">
+        {ANALYTICS_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            id={`analytics-tab-${tab.id}`}
+            className={`ins-tab-btn${activeTab === tab.id ? ' active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            <tab.icon size={15} />
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {/* Tab content */}
+      {renderContent()}
+    </div>
+  );
+}
+
+// ==========================================
 // 4. MAIN ROUTING & ENTRY
 // ==========================================
 
@@ -4434,6 +4620,7 @@ export default function App() {
         <Route path="finance" element={<Finance />} />
         <Route path="profit-loss" element={<ProfitLoss />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="insight" element={<Analytics />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

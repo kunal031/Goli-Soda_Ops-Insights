@@ -5,7 +5,15 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Load .env from current dir first, then fall back to parent (project root)
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+
 
 // ── PASSWORD ENCRYPTION HELPERS ──
 export function hashPassword(password) {
@@ -121,15 +129,33 @@ export async function initDb() {
     );
   }
 
-  pool = new Pool({
-    connectionString,
-    ssl: connectionString.includes('localhost') || connectionString.includes('127.0.0.1')
-      ? false
-      : { rejectUnauthorized: false },
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-  });
+  const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+
+  // If PG_PASSWORD is set, use explicit params to avoid URL-encoding issues with special chars
+  if (process.env.PG_PASSWORD) {
+    const url = new URL(connectionString);
+    pool = new Pool({
+      host: url.hostname,
+      port: parseInt(url.port || '5432', 10),
+      user: url.username,
+      password: process.env.PG_PASSWORD,
+      database: url.pathname.replace(/^\//, ''),
+      ssl: isLocal ? false : { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+    });
+  } else {
+    pool = new Pool({
+      connectionString,
+      ssl: isLocal ? false : { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+    });
+  }
+
+
 
   // Test connection
   const testClient = await pool.connect();
