@@ -1081,15 +1081,15 @@ enquiryRouter.patch('/:id/status', authenticateToken, async (req, res, next) => 
 });
 
 // Bind Routers to App
-app.use('/api/auth', authRouter);
-app.use('/api/enquiry', enquiryRouter);
-app.use('/api/inventory', authenticateToken, inventoryRouter);
-app.use('/api/expenses', authenticateToken, expenseRouter);
-app.use('/api/sales', authenticateToken, salesRouter);
-app.use('/api/reports', authenticateToken, reportRouter);
+app.use('/auth', authRouter);
+app.use('/enquiry', enquiryRouter);
+app.use('/inventory', authenticateToken, inventoryRouter);
+app.use('/expenses', authenticateToken, expenseRouter);
+app.use('/sales', authenticateToken, salesRouter);
+app.use('/reports', authenticateToken, reportRouter);
 
 // Health check
-app.get('/api/health', (_req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'GoliOps API', version: '1.0.0', database: 'PostgreSQL' });
 });
 
@@ -1104,7 +1104,7 @@ if (process.env.VERCEL !== '1') {
         console.log(`\n  🧊 GoliOps API Server with PostgreSQL`);
         console.log(`  ────────────────────────────────────`);
         console.log(`  ➜  Running on http://localhost:${PORT}`);
-        console.log(`  ➜  Health: http://localhost:${PORT}/api/health\n`);
+        console.log(`  ➜  Health: http://localhost:${PORT}/health\n`);
       });
     })
     .catch((err) => {
