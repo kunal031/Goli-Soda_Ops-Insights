@@ -1886,11 +1886,12 @@ export function Home() {
   const [expenses, setExpenses] = useState([]);
   const [sales, setSales] = useState([]);
   const [pnl, setPnl] = useState(null);
+  const [enquiries, setEnquiries] = useState([]);
 
   useEffect(() => {
     async function loadAll() {
       try {
-        const [dashRes, lowRes, prodRes, txnRes, expRes, salRes, pnlRes] =
+        const [dashRes, lowRes, prodRes, txnRes, expRes, salRes, pnlRes, enqRes] =
           await Promise.all([
             apiFetch('/api/reports/dashboard'),
             apiFetch('/api/inventory/low-stock'),
@@ -1899,6 +1900,7 @@ export function Home() {
             apiFetch('/api/expenses'),
             apiFetch('/api/sales'),
             apiFetch('/api/reports/pnl'),
+            apiFetch('/api/enquiry'),
           ]);
 
         setDashboard(await dashRes.json());
@@ -1908,6 +1910,8 @@ export function Home() {
         setExpenses(await expRes.json());
         setSales(await salRes.json());
         setPnl(await pnlRes.json());
+        const enqData = await enqRes.json();
+        setEnquiries(Array.isArray(enqData) ? enqData : []);
       } catch (err) {
         console.error('Home load error:', err);
       } finally {
@@ -1916,6 +1920,23 @@ export function Home() {
     }
     loadAll();
   }, [apiFetch]);
+
+  const updateEnquiryStatus = async (id, status) => {
+    try {
+      const res = await apiFetch(`/api/enquiry/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEnquiries((prev) =>
+          prev.map((e) => (e.id === id ? data.enquiry : e))
+        );
+      }
+    } catch (err) {
+      console.error('Status update failed:', err);
+    }
+  };
 
   const fmt = (n) => `₹${Number(n).toLocaleString('en-IN')}`;
 
@@ -2769,6 +2790,167 @@ export function Home() {
                         }}
                       >
                         {t.note || '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ── Enquiries Panel ── */}
+      <div
+        className="glass-card animate-fade-in"
+        style={{ overflow: 'hidden', marginBottom: 24, animationDelay: '0.55s' }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '20px 24px 16px',
+            borderBottom: '1px solid var(--surface-700)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                width: 34, height: 34, borderRadius: 9,
+                background: 'rgba(168, 85, 247, 0.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <FileText size={16} color="#c084fc" />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#f8fafc' }}>
+                Enquiries
+              </h3>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                {enquiries.length} total · {enquiries.filter(e => e.status === 'new').length} new
+              </p>
+            </div>
+          </div>
+          {enquiries.filter(e => e.status === 'new').length > 0 && (
+            <span
+              className="badge"
+              style={{
+                background: 'rgba(168,85,247,0.15)',
+                color: '#c084fc',
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                padding: '3px 10px',
+              }}
+            >
+              {enquiries.filter(e => e.status === 'new').length} new
+            </span>
+          )}
+        </div>
+
+        {enquiries.length === 0 ? (
+          <div className="empty-state" style={{ padding: '32px 16px' }}>
+            <FileText size={32} color="#334155" style={{ marginBottom: 8 }} />
+            <p style={{ fontWeight: 600, color: '#64748b', fontSize: '0.8125rem' }}>
+              No enquiries yet
+            </p>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="data-table" style={{ marginTop: 0 }}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Company</th>
+                  <th>Location</th>
+                  <th>Interest</th>
+                  <th>Email</th>
+                  <th>Message</th>
+                  <th>Received</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {enquiries.map((enq) => {
+                  const statusStyles = {
+                    new:       { bg: 'rgba(168,85,247,0.12)', color: '#c084fc', label: 'New' },
+                    contacted: { bg: 'rgba(6,182,212,0.12)',  color: '#22d3ee', label: 'Contacted' },
+                    closed:    { bg: 'rgba(100,116,139,0.12)', color: '#94a3b8', label: 'Closed' },
+                  };
+                  const st = statusStyles[enq.status] || statusStyles.new;
+                  return (
+                    <tr
+                      key={enq.id}
+                      style={{
+                        borderLeft: enq.status === 'new' ? '3px solid #c084fc' : '3px solid transparent',
+                      }}
+                    >
+                      <td>
+                        <code style={{ fontSize: '0.6875rem', color: '#64748b' }}>#{enq.id}</code>
+                      </td>
+                      <td style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.8125rem' }}>
+                        {enq.company}
+                      </td>
+                      <td style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>{enq.location}</td>
+                      <td>
+                        <span
+                          className="badge"
+                          style={{
+                            background: enq.interest === 'wholesale'
+                              ? 'rgba(59,130,246,0.12)' : 'rgba(34,197,94,0.12)',
+                            color: enq.interest === 'wholesale' ? '#60a5fa' : '#4ade80',
+                            fontSize: '0.6875rem',
+                            textTransform: 'capitalize',
+                          }}
+                        >
+                          {enq.interest}
+                        </span>
+                      </td>
+                      <td>
+                        <a
+                          href={`mailto:${enq.email}`}
+                          style={{ fontSize: '0.8125rem', color: '#22d3ee', textDecoration: 'none' }}
+                        >
+                          {enq.email}
+                        </a>
+                      </td>
+                      <td
+                        style={{
+                          fontSize: '0.8125rem', color: '#94a3b8',
+                          maxWidth: 220, overflow: 'hidden',
+                          textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}
+                        title={enq.message}
+                      >
+                        {enq.message}
+                      </td>
+                      <td style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap' }}>
+                        {new Date(enq.created_at).toLocaleDateString('en-IN', {
+                          day: 'numeric', month: 'short', year: 'numeric',
+                        })}
+                      </td>
+                      <td>
+                        <select
+                          id={`enquiry-status-${enq.id}`}
+                          value={enq.status}
+                          onChange={(e) => updateEnquiryStatus(enq.id, e.target.value)}
+                          style={{
+                            background: st.bg,
+                            color: st.color,
+                            border: `1px solid ${st.color}40`,
+                            borderRadius: 6,
+                            padding: '3px 8px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            outline: 'none',
+                          }}
+                        >
+                          <option value="new">New</option>
+                          <option value="contacted">Contacted</option>
+                          <option value="closed">Closed</option>
+                        </select>
                       </td>
                     </tr>
                   );

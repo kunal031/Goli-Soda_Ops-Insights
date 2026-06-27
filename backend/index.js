@@ -215,6 +215,17 @@ export async function initDb() {
       value TEXT NOT NULL,
       UNIQUE(user_id, label)
     );
+
+    CREATE TABLE IF NOT EXISTS enquiries (
+      id SERIAL PRIMARY KEY,
+      company TEXT NOT NULL,
+      location TEXT NOT NULL,
+      interest TEXT NOT NULL CHECK(interest IN ('retail', 'wholesale')),
+      email TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new', 'contacted', 'closed')),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 
   // Seed Users
@@ -986,8 +997,92 @@ reportRouter.get('/dashboard', async (req, res, next) => {
   }
 });
 
+// ── ENQUIRY ROUTER ──
+const enquiryRouter = express.Router();
+
+// Validate helper (mirrors the Zod schema — no zod dep needed in backend)
+function validateEnquiry(body) {
+  const { company, location, interest, email, message } = body;
+  const errors = [];
+  if (!company || typeof company !== 'string' || company.trim().length < 2)
+    errors.push('Company name must be at least 2 characters.');
+  if (company && company.trim().length > 100)
+    errors.push('Company name too long (max 100).');
+  if (!location || typeof location !== 'string' || location.trim().length < 2)
+    errors.push('Location must be at least 2 characters.');
+  if (location && location.trim().length > 100)
+    errors.push('Location too long (max 100).');
+  if (!interest || !['retail', 'wholesale'].includes(interest))
+    errors.push('Interest must be either "retail" or "wholesale".');
+  if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+    errors.push('Enter a valid email address.');
+  if (email && email.trim().length > 255)
+    errors.push('Email too long (max 255).');
+  if (!message || typeof message !== 'string' || message.trim().length < 10)
+    errors.push('Message must be at least 10 characters.');
+  if (message && message.trim().length > 1000)
+    errors.push('Message too long (max 1000).');
+  return errors;
+}
+
+// POST /api/enquiry — public, no auth required
+enquiryRouter.post('/', async (req, res, next) => {
+  const errors = validateEnquiry(req.body);
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors[0], errors });
+  }
+  const { company, location, interest, email, message } = req.body;
+  try {
+    const db = getDb();
+    const result = await db.query(
+      `INSERT INTO enquiries (company, location, interest, email, message)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [company.trim(), location.trim(), interest, email.trim().toLowerCase(), message.trim()]
+    );
+    res.status(201).json({ success: true, enquiry: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/enquiry — admin only, returns all enquiries newest first
+enquiryRouter.get('/', authenticateToken, async (req, res, next) => {
+  try {
+    const db = getDb();
+    const result = await db.query(
+      `SELECT * FROM enquiries ORDER BY created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/enquiry/:id/status — update status
+enquiryRouter.patch('/:id/status', authenticateToken, async (req, res, next) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  if (!['new', 'contacted', 'closed'].includes(status)) {
+    return res.status(400).json({ error: 'Status must be one of: new, contacted, closed.' });
+  }
+  try {
+    const db = getDb();
+    const result = await db.query(
+      `UPDATE enquiries SET status = $1 WHERE id = $2 RETURNING *`,
+      [status, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Enquiry not found.' });
+    }
+    res.json({ success: true, enquiry: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Bind Routers to App
 app.use('/api/auth', authRouter);
+app.use('/api/enquiry', enquiryRouter);
 app.use('/api/inventory', authenticateToken, inventoryRouter);
 app.use('/api/expenses', authenticateToken, expenseRouter);
 app.use('/api/sales', authenticateToken, salesRouter);
