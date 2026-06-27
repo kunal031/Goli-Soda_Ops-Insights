@@ -365,6 +365,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Ensure DB is initialized before every request.
+// On Vercel (serverless) the local listener block never runs, so initDb()
+// would never be called without this middleware.
+// initDb() is idempotent — if the pool is already open it returns immediately.
+app.use(async (req, res, next) => {
+  try {
+    await initDb();
+    next();
+  } catch (err) {
+    console.error('DB init failed:', err.message);
+    res.status(503).json({ error: 'Database unavailable. Please try again shortly.' });
+  }
+});
+
 // ── ROUTERS ──
 
 // 1. Auth Router
